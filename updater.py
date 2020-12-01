@@ -100,7 +100,7 @@ def unpack_gz_into(source, destination, replace=False, save_extract=False):
         shutil.rmtree(temp_source_dir)
     print("Done")
 
-def download_drupal_package(download_url, filename, hash=""):
+def download_drupal_package(download_url, filename, package_hash=""):
     check_dir(temp_dir)
     
     destination = "{}/{}".format(temp_dir, filename)
@@ -114,7 +114,7 @@ def download_drupal_package(download_url, filename, hash=""):
     print("Verifying package authenticity.")
     file_hash = hashlib.md5(f.read()).hexdigest()
     f.close()
-    if file_hash != hash:
+    if file_hash != package_hash:
         print("Warning! Hash Mismatch")
         remove_file(destination)
     else:
