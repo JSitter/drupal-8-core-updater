@@ -1,22 +1,21 @@
 #! /usr/bin/env python3
-
+import hashlib
 from optparse import OptionParser
 import os
 import os.path as path
+import requests
 import shutil
 import sys
 import tarfile
 import urllib.request as req
 import xml.etree.ElementTree as ET
-import requests
-import hashlib
 
 drupal_server_address = 'https://updates.drupal.org/release-history/drupal/8.x'
 home_directory = os.path.dirname(os.path.realpath(__file__))
 temp_dir = home_directory + '/.tempdir'
 zipped_package_location = None
 
-forbidden_folders = {'sites'}
+forbidden_folders = {'modules', 'profiles', 'sites', 'themes'}
 forbidden_files = {'.htaccess'}
 
 def check_temp_dir():
@@ -57,7 +56,7 @@ def update_file(temp_location, file, destination, replace=False):
             except:
                 print("{} locked".format(file))
 
-def unpack_gz_into(source, destination, replace=False, save_extract=True):
+def unpack_gz_into(source, destination, replace=False, save_extract=False):
     tar = tarfile.open(source, 'r:gz')
     allfiles = tar.getnames()
     temp_source_dir = "{}/{}".format(temp_dir, allfiles[0])
@@ -101,16 +100,15 @@ def download_drupal_package(download_url, filename, hash=""):
         print("Package authenticity established")
 
 def get_drupal_versions(num_of_versions=None):
-    # response = requests.get(drupal_server_address)
+    response = requests.get(drupal_server_address)
+
+    # debug from saved xml data
     # with open('drupalxml.xml', 'wb') as f:
     #     f.write(response.content)
-
-    # debugging from saved xml data
-    root = ET.parse('drupalxml.xml').getroot()
+    # root = ET.parse('drupalxml.xml').getroot()
     
-
     # Parse XML response
-    # root = ET.fromstring(response.content)
+    root = ET.fromstring(response.content)
     release_order = []
 
     release_dict = {}
@@ -146,36 +144,32 @@ def get_drupal_versions(num_of_versions=None):
     return release_dict
 
 if __name__ == "__main__":
-    usage = "usage: %prog [options] drupal_installation_location"
+    usage = "usage: %prog [options]"
     parser = OptionParser(usage=usage)
     parser.add_option("-d", "--download",
-                        help="Download version from Drupal.org",
+                        help="Download specified version from Drupal.org. If no version is specified most recent version will be chosen",
                         action="store_true",
                         dest="download")
 
     parser.add_option("-f", "--file",
-                        help="Use local package",
+                        help="Use local installation package. (Must be tar.gz)",
                         dest="local_path")
 
     parser.add_option("-r", "--replace",
-                        help="Replace existing files",
+                        help="Replace all existing files when installing. **WARNING!** This will replace any custom modules, themes, and file uploads. Use with caution.",
                         action="store_true",
                         dest="replace")
     
     parser.add_option("-l", "--list",
-                        help="List recent versions",
+                        help="List available versions of Drupal. Defaults to all versions but add optional argument to limit to most recent N versions.",
                         action="store_true",
                         dest="list")
     
     parser.add_option("-i", "--install",
-                        help="Installation location",
+                        help="Location of local Drupal installation",
                         dest="install")
     
     (options, args) = parser.parse_args()
-    # home_directory = path.dirname(path.realpath(__file__))
-
-    print(options)
-    print(args)
 
     if options.list:
         if args:
@@ -222,19 +216,16 @@ if __name__ == "__main__":
         else:
             unpack_gz_into(source, destination)
 
-                
+    elif options.local_path:
+        if options.install:
+            destination = options.install
+        else:
+            destination = input("Enter installation location: ")
+        print("Installing into {}".format(destination))
+        if options.replace:
+            unpack_gz_into(options.local_path, destination, replace=True)
+        else:
+            unpack_gz_into(options.local_path, destination)
 
-
-    # versions = get_drupal_versions()
-    # print("Most recent version: {}".format(versions['order'][0]))
-    # drupal_version = versions[versions['order'][0]]
-
-    # download_url = drupal_version['url']
-    # download_filename = drupal_version['filename']
-    # download_hash = drupal_version['hash']
-    # download_full_path = "{}/{}".format(temp_dir, download_filename)
-
-    # if not path.exists(temp_dir):
-    #     os.mkdir(temp_dir)
-
-    # download_drupal_package(download_url, download_full_path, download_hash)
+    else:
+        parser.print_help()         
