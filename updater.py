@@ -44,9 +44,9 @@ zipped_package_location = None
 forbidden_folders = {'modules', 'profiles', 'sites', 'themes'}
 forbidden_files = {'.htaccess'}
 
-def check_temp_dir():
-    if not path.exists(temp_dir):
-        os.mkdir(temp_dir)
+def check_dir(directory):
+    if not path.exists(directory):
+        os.mkdir(directory)
 
 def remove_directory(source):
     print("Removing {}".format(source))
@@ -87,12 +87,8 @@ def unpack_gz_into(source, destination, replace=False, save_extract=False):
     allfiles = tar.getnames()
     temp_source_dir = "{}/{}".format(temp_dir, allfiles[0])
 
-    if not path.exists(temp_dir):
-        os.mkdir(temp_dir)
-    
-    if not path.exists(destination):
-        print("Destination does not exist")
-        sys.exit(1)
+    check_dir(temp_dir)
+    check_dir(destination)
     
     tarball = tarfile.open(source, 'r:gz')
     tarball.extractall(path=temp_dir)
@@ -106,7 +102,7 @@ def unpack_gz_into(source, destination, replace=False, save_extract=False):
     print("Done")
 
 def download_drupal_package(download_url, filename, hash=""):
-    check_temp_dir()
+    check_dir(temp_dir)
     
     destination = "{}/{}".format(temp_dir, filename)
     if not path.exists(destination):
@@ -216,12 +212,13 @@ if __name__ == "__main__":
         if args:
             if args[0] not in versions:
                 print("Version not available")
+                sys.exit(1)
             else:
                 if versions[args[0]]['security'] == "Insecure":
                     user_choice = input("Version {} is insecure. Proceed anyway? [Y/n]")
                     if user_choice != 'Y':
                         print("Aborting Installation")
-                        sys.exit(0)
+                        sys.exit(1)
                 version = versions[args[0]]
         else:
             version = versions[versions["order"][0]]
