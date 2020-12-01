@@ -95,7 +95,7 @@ def download_drupal_package(download_url, destination, hash=""):
     else:
         print("Package authenticity established")
 
-def get_drupal_versions():
+def get_drupal_versions(num_of_versions=None):
     # response = requests.get(drupal_server_address)
     # with open('drupalxml.xml', 'wb') as f:
     #     f.write(response.content)
@@ -134,7 +134,10 @@ def get_drupal_versions():
                         "security": security}
 
         release_dict[release_version] = cur_release
-    release_dict["order"] = release_order
+    if num_of_versions is not None and num_of_versions < len(release_order):
+        release_dict["order"] = release_order[:num_of_versions]
+    else:
+        release_dict["order"] = release_order
     return release_dict
 
 if __name__ == "__main__":
@@ -164,6 +167,20 @@ if __name__ == "__main__":
 
     print(options)
     print(args)
+
+    if options.list:
+        if args:
+            num_of_versions = int(args[0])
+            versions = get_drupal_versions(num_of_versions)
+            print("Showing most recent {} versions".format(num_of_versions))
+            for version in versions['order']:
+                print(version)
+        else:
+            versions = get_drupal_versions()
+            print("{} available versions".format(len(versions['order'])))
+
+            for version in versions['order']:
+                print(version)
 
     versions = get_drupal_versions()
     print("Most recent version: {}".format(versions['order'][0]))
