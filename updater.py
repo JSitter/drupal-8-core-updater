@@ -78,7 +78,10 @@ def unpack_gz_into(source, destination, replace=False, save_extract=False):
         shutil.rmtree(temp_source_dir)
     print("Done")
 
-def download_drupal_package(download_url, destination, hash=""):
+def download_drupal_package(download_url, filename, hash=""):
+    if not path.exists(temp_dir):
+        os.mkdir(temp_dir)
+    destination = "{}/{}".format(temp_dir, filename)
     if not path.exists(destination):
         print("Downloading {}".format(destination.split('/')[-1]))
         req.urlretrieve(download_url, destination)
@@ -181,17 +184,39 @@ if __name__ == "__main__":
 
             for version in versions['order']:
                 print(version)
+    elif options.download:
+        versions = get_drupal_versions()
+        if args:
+            if args[0] not in versions:
+                print("Version not available")
+            else:
+                if versions[args[0]]['security'] == "Insecure":
+                    user_choice = input("Version {} is insecure. Proceed anyway? [Y/n]")
+                    if user_choice != 'Y':
+                        print("Aborting Installation")
+                        sys.exit(0)
+                version = versions[args[0]]
+        else:
+            version = versions[versions["order"][0]]
+        print("Downloading {}".format(version["name"]))
+        download_url = version['url']
+        download_filename = version['filename']
+        download_hash = version['hash']
+        download_drupal_package(download_url, download_filename, download_hash)
 
-    versions = get_drupal_versions()
-    print("Most recent version: {}".format(versions['order'][0]))
-    drupal_version = versions[versions['order'][0]]
+                
 
-    download_url = drupal_version['url']
-    download_filename = drupal_version['filename']
-    download_hash = drupal_version['hash']
-    download_full_path = "{}/{}".format(temp_dir, download_filename)
 
-    if not path.exists(temp_dir):
-        os.mkdir(temp_dir)
+    # versions = get_drupal_versions()
+    # print("Most recent version: {}".format(versions['order'][0]))
+    # drupal_version = versions[versions['order'][0]]
 
-    download_drupal_package(download_url, download_full_path, download_hash)
+    # download_url = drupal_version['url']
+    # download_filename = drupal_version['filename']
+    # download_hash = drupal_version['hash']
+    # download_full_path = "{}/{}".format(temp_dir, download_filename)
+
+    # if not path.exists(temp_dir):
+    #     os.mkdir(temp_dir)
+
+    # download_drupal_package(download_url, download_full_path, download_hash)
