@@ -39,7 +39,6 @@ import xml.etree.ElementTree as ET
 drupal_server_address = 'https://updates.drupal.org/release-history/drupal/8.x'
 home_directory = os.path.dirname(os.path.realpath(__file__))
 temp_dir = home_directory + '/.tempdir'
-zipped_package_location = None
 
 forbidden_folders = {'modules', 'profiles', 'sites', 'themes'}
 forbidden_files = {'.htaccess'}
