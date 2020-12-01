@@ -106,8 +106,8 @@ def unpack_gz_into(source, destination, replace=False, save_extract=False):
     print("Done")
 
 def download_drupal_package(download_url, filename, hash=""):
-    if not path.exists(temp_dir):
-        os.mkdir(temp_dir)
+    check_temp_dir()
+    
     destination = "{}/{}".format(temp_dir, filename)
     if not path.exists(destination):
         print("Downloading {}".format(destination.split('/')[-1]))
