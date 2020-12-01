@@ -59,13 +59,17 @@ def update_file(temp_location, file, destination, replace=False):
             except:
                 print("{} locked".format(file))
 
-def unpack_gz_into(source, destination, replace=False, save_extract=False):
+def unpack_gz_into(source, destination, replace=False, save_extract=True):
     tar = tarfile.open(source, 'r:gz')
     allfiles = tar.getnames()
     temp_source_dir = "{}/{}".format(temp_dir, allfiles[0])
 
     if not path.exists(temp_dir):
         os.mkdir(temp_dir)
+    
+    if not path.exists(destination):
+        print("Destination does not exist")
+        sys.exit(1)
     
     tarball = tarfile.open(source, 'r:gz')
     tarball.extractall(path=temp_dir)
@@ -165,6 +169,10 @@ if __name__ == "__main__":
                         action="store_true",
                         dest="list")
     
+    parser.add_option("-i", "--install",
+                        help="Installation location",
+                        dest="install")
+    
     (options, args) = parser.parse_args()
     # home_directory = path.dirname(path.realpath(__file__))
 
@@ -184,6 +192,7 @@ if __name__ == "__main__":
 
             for version in versions['order']:
                 print(version)
+
     elif options.download:
         versions = get_drupal_versions()
         if args:
@@ -203,6 +212,17 @@ if __name__ == "__main__":
         download_filename = version['filename']
         download_hash = version['hash']
         download_drupal_package(download_url, download_filename, download_hash)
+        if options.install:
+            destination = options.install
+            print("destination: {}".format(destination))
+        else:
+            destination = input("Enter installation location")
+            print("destination: {}".format(destination))
+        source = "{}/{}".format(temp_dir, download_filename)
+        if options.replace:
+            unpack_gz_into(source, destination, replace=True)
+        else:
+            unpack_gz_into(source, destination)
 
                 
 
