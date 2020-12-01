@@ -7,10 +7,8 @@ import shutil
 import sys
 import tarfile
 import urllib.request as req
-import zipfile
 import xml.etree.ElementTree as ET
 import requests
-import curses
 import hashlib
 
 drupal_server_address = 'https://updates.drupal.org/release-history/drupal/8.x'
@@ -216,7 +214,7 @@ if __name__ == "__main__":
             destination = options.install
             print("destination: {}".format(destination))
         else:
-            destination = input("Enter installation location")
+            destination = input("Enter installation location: ")
             print("destination: {}".format(destination))
         source = "{}/{}".format(temp_dir, download_filename)
         if options.replace:
