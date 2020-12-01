@@ -5,10 +5,15 @@ To use, `cd` into this project directory and run `./updater.py` to see a list of
 
 ## Options
 `-h`, `--help` - Show help screen.
+
 `-d`, `--download` - Download version of Drupal from Drupal.org. If no version is specified the updater will download the most recent version available.
+
 `-f LOCAL_PATH`, `--file=LOCAL_PATH` - Install version from specified local package.
+
 `--replace` - Replace all files with new installation files. **Warning** This option will replace any custom or contributed modules, themes, profiles, .htaccess files, and any user uploaded files. Use with caution.
+
 `-l`, `--list` - List all available versions of Drupal 8 or specify a number to limit to most recent N.
+
 `-i INSTALL_LOCATION`, `--install=INSTALL_LOCATION` - Specify directory location to install Drupal into.
 
 ## MIT License
