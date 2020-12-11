@@ -29,7 +29,6 @@ import hashlib
 from optparse import OptionParser
 import os
 import os.path as path
-import requests
 import shutil
 import sys
 import tarfile
