@@ -120,8 +120,13 @@ def download_drupal_package(download_url, filename, package_hash=""):
     else:
         print("Package authenticity established")
 
+def get_xml_urllib(url):
+    res = req.urlopen(url)
+    xml = res.read()
+    return ET.fromstring(xml)
+
 def get_drupal_versions(num_of_versions=None):
-    response = requests.get(drupal_server_address)
+    root = get_xml_urllib(drupal_server_address)
 
     # debug from saved xml data
     # with open('drupalxml.xml', 'wb') as f:
@@ -129,7 +134,7 @@ def get_drupal_versions(num_of_versions=None):
     # root = ET.parse('drupalxml.xml').getroot()
     
     # Parse XML response
-    root = ET.fromstring(response.content)
+    
     release_order = []
 
     release_dict = {}
