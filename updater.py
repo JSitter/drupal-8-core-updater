@@ -26,12 +26,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 import hashlib
+import math
 from optparse import OptionParser
 import os
 import os.path as path
 import shutil
 import sys
 import tarfile
+import time
 import urllib.request as req
 import xml.etree.ElementTree as ET
 
@@ -99,25 +101,79 @@ def unpack_gz_into(source, destination, replace=False, save_extract=False):
         shutil.rmtree(temp_source_dir)
     print("Done")
 
-def download_drupal_package(download_url, filename, package_hash=""):
+def download_report_hook(count, chunk_size, total_size):
+    global start_time
+    global progress
+    current_time = time.time()
+    if count == 0:
+        start_time = current_time
+        progress = int(chunk_size)
+        return
+    duration = current_time - start_time
+    progress += int(chunk_size)
+    speed = int(progress / (1024 * duration))
+    if speed > 799:
+        speed = speed / 1000
+        speed_scale = "MB/s"
+    else:
+        speed_scale = "KB/s"
+    percent = progress * 100 / total_size
+    progress_mb = progress / (1024 * 1024)
+    percent_scale = int(math.floor(percent)/4)
+    vis_downloaded = "=" * percent_scale
+    vis_remaining = "." * (25 - percent_scale) + '|'
+    CURSOR_UP = '\x1b[1A'
+    CLEAR_LINE = '\x1b[2k'
+
+    sys.stdout.write("{}{}\r{}>{}               \n".format(CURSOR_UP, CLEAR_LINE, vis_downloaded, vis_remaining))
+    sys.stdout.write("\r{}{} {:.2f}% -- {:.2f}MB out of {:.2f}MB {:.0f}s          ".format(speed, speed_scale, percent, progress_mb, total_size/1000000, duration))
+    sys.stdout.flush()
+
+def download_drupal_version(download_url, destination):
+    retry = True
+    user_affirmative = {"Y", "y"}
+    while retry:
+        retry = False
+        try:
+            print("Downloading {}".format(destination.split('/')[-1]))
+            req.urlretrieve(download_url, destination, download_report_hook)
+        except:
+            user_retry = input("Failed to complete download. Retry? [Y/n] ")
+            if user_retry in user_affirmative:
+                retry = True
+            else:
+                sys.exit(1)
+        else:
+            time_completed = time.time() - start_time
+            sys.stdout.write("\rDownload Complete in {:.1f} seconds.                                \n".format(time_completed))
+            sys.stdout.flush()
+
+def handle_drupal_download(download_url, filename, source_hash=""):
     check_dir(temp_dir)
-    
+    user_affirmative = {"Y", "y"}
     destination = "{}/{}".format(temp_dir, filename)
+    # Allow user to retry if package fails to download
+
     if not path.exists(destination):
-        print("Downloading {}".format(destination.split('/')[-1]))
-        req.urlretrieve(download_url, destination)
+        download_drupal_version(download_url, destination)
     else:
         print("Using local file.")
     
-    f = open(destination, 'rb')
-    print("Verifying package authenticity.")
-    file_hash = hashlib.md5(f.read()).hexdigest()
-    f.close()
-    if file_hash != package_hash:
-        print("Warning! Hash Mismatch")
-        remove_file(destination)
-    else:
-        print("Package authenticity established")
+    retry = True
+    while retry:
+        retry = False
+        f = open(destination, 'rb')
+        print("Verifying package authenticity.")
+        file_hash = hashlib.md5(f.read()).hexdigest()
+        f.close()
+        if file_hash != source_hash:
+            user_retry_download = input("Warning! Hash Mismatch. Retry download? [Y/n] ")
+            remove_file(destination)
+            if user_retry_download in user_affirmative:
+                download_drupal_version(download_url, destination)
+                retry = True
+            else:
+                sys.exit(1)
 
 def get_xml_urllib(url):
     res = req.urlopen(url)
@@ -218,7 +274,7 @@ if __name__ == "__main__":
                 sys.exit(1)
             else:
                 if versions[args[0]]['security'] == "Insecure":
-                    user_choice = input("Version {} is insecure. Proceed anyway? [Y/n]")
+                    user_choice = input("Version {} is insecure. Proceed anyway? [Y/n] ".format(args[0]))
                     if user_choice != 'Y':
                         print("Aborting Installation")
                         sys.exit(1)
@@ -229,13 +285,13 @@ if __name__ == "__main__":
         download_url = version['url']
         download_filename = version['filename']
         download_hash = version['hash']
-        download_drupal_package(download_url, download_filename, download_hash)
+        handle_drupal_download(download_url, download_filename, download_hash)
         if options.install:
             destination = options.install
-            print("destination: {}".format(destination))
+            print("Installing into: {}".format(destination))
         else:
             destination = input("Enter installation location: ")
-            print("destination: {}".format(destination))
+            print("Installing into: {}".format(destination))
         source = "{}/{}".format(temp_dir, download_filename)
         if options.replace:
             unpack_gz_into(source, destination, replace=True)
